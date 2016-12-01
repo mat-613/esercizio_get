@@ -19,44 +19,53 @@ function Dettaglio({title, content}){
         </div>
   );
 };
-let Contenitore = React.createClass({
-    state : {news :[
-    {
-        titolo:"",
-        contenuto:"",
-        id:""
-    }
-    ]},
+class Contenitore extends React.Component {
+    constructor() {
+        super();
+        this.state = {
+            news: [
+                {
+                    titolo: "",
+                    contenuto: "",
+                    id: ""
+                }
+            ]
+        }
+        this.richiestaNews().then(async (listaNews)=>{
+            console.log(listaNews);
+            let notizia= await this.richiestaDettaglio(listaNews[0].id)
+            console.log(notizia);
 
-    renderNotizia(){
+        });
+
+    };
+
+    renderNotizia() {
         console.log('rendernotizia')
-        let arr = this.state.news.map(({titolo,contenuto},index)=>{
-            return <Notizia value={titolo} id={index}/>
+        let arr = this.state.news.map(({titolo, contenuto}, index) => {
+            return <Notizia value={titolo} key={index} id={index}/>
         });
         return arr;
 
-    },
-    renderDettaglio(idNews){
+    };
+
+    renderDettaglio(idNews) {
         console.log('renderdettalio')
-
         return <Dettaglio title={this.state.news[idNews].titolo} content={this.state.news[idNews].contenuto}/>
-    },
-    richiestaDettaglio(idNews){
-        let id = this.state.news[idNews].id;
-        this.richiestaHTTP(id).then((data)=>{
-            let newArray= this.state.news.slice();
-            newArray[idNews].contenuto=data.content;
-            this.setState({news:newArray});
-        });
+    };
 
-    },
-    richiestaHTTP(idNews= ''){
-        if(idNews===''){
-            urlGet= url+'?noContent=true'
-        }else{
-            urlGet= url +'/'+idNews
+    richiestaDettaglio(idNews) {
+        return this.richiestaHTTP(idNews);
+
+    };
+
+    richiestaHTTP(idNews = '') {
+        if (idNews === '') {
+            urlGet = url + '?noContent=true'
+        } else {
+            urlGet = url + '/' + idNews
         }
-        return new Promise((resolve, reject)=> {
+        return new Promise((resolve, reject) => {
             let xmlGetNews = new XMLHttpRequest();
             xmlGetNews.open('GET', urlGet);
             xmlGetNews.send();
@@ -65,36 +74,31 @@ let Contenitore = React.createClass({
                     let listaNews = JSON.parse(xmlGetNews.responseText);
                     resolve(listaNews);
                 }
-                else{
+                else {
                     reject();
                 }
             });
         });
-    },
+    }
 
-    richiestaNews(){
-        this.richiestaHTTP().then((listaNews)=>{
-             listaNews=listaNews.results;
-             let newArr=listaNews.map((index,item)=>{
-                let notizia={
-                    titolo:listaNews[item].title,
-                    id:listaNews[item]._id,
-                    contenuto:""
+    richiestaNews() {
+        return this.richiestaHTTP().then((listaNews) => {
+            listaNews = listaNews.results;
+            return listaNews.map((index, item) => {
+                let notizia = {
+                    titolo: listaNews[item].title,
+                    id: listaNews[item]._id,
+                    contenuto: ""
                 };
                 return notizia;
-             });
-            this.setState({news:newArr})
+            });
+
         });
-    },
+    }
 
-    componentWillMount(){
-        this.richiestaNews();
-        this.richiestaDettaglio(0)
-        console.log(this.state);
-    },
 
-    render(){
-        return(
+    render() {
+        return (
             <div>
                 <ul>
                     {this.renderNotizia()}
@@ -105,8 +109,7 @@ let Contenitore = React.createClass({
             </div>
         );
     }
-});
-
+}
 
 
 
