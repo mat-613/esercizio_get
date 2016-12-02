@@ -1,13 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-
+import {Provider} from 'react-redux';
+import {createStore} from 'redux';
+import {connect} from 'react-redux';
+import reducer from './reducer'
 
 const url = "http://www.basketincontro.it/api/news";
 let urlGet;
-function Notizia({id, value}){
+function Notizia({id, value,Click}){
     return(
-        <li id={id}>{value}</li>
+        <li id={id} onClick={Click}>{value}</li>
     );
 
 };
@@ -31,19 +34,25 @@ class Contenitore extends React.Component {
                 }
             ]
         }
+        console.log('comp')
         this.richiestaNews().then(async (listaNews)=>{
             console.log(listaNews);
-            let notizia= await this.richiestaDettaglio(listaNews[0].id)
+            let notizia= await this.richiestaDettaglio(listaNews[0].id);
             console.log(notizia);
-
+            listaNews[0].contenuto=notizia.content;
+            console.log(listaNews[0].titolo)
+            this.props.updateTitolo(listaNews[0].titolo);
+            this.props.updateNews(notizia.content)
+            this.setState({news:listaNews})
+            console.log(this.props)
         });
 
     };
 
     renderNotizia() {
         console.log('rendernotizia')
-        let arr = this.state.news.map(({titolo, contenuto}, index) => {
-            return <Notizia value={titolo} key={index} id={index}/>
+        let arr = this.state.news.map(({titolo, contenuto,id}, index) => {
+            return <Notizia value={titolo} key={index} id={index} Click={()=>{this.handleClick(id)}} />
         });
         return arr;
 
@@ -51,12 +60,11 @@ class Contenitore extends React.Component {
 
     renderDettaglio(idNews) {
         console.log('renderdettalio')
-        return <Dettaglio title={this.state.news[idNews].titolo} content={this.state.news[idNews].contenuto}/>
+        return <Dettaglio title={this.props.titolo} content={this.props.contenuto}/>
     };
 
     richiestaDettaglio(idNews) {
         return this.richiestaHTTP(idNews);
-
     };
 
     richiestaHTTP(idNews = '') {
@@ -95,25 +103,58 @@ class Contenitore extends React.Component {
 
         });
     }
+    handleClick(idNews){
 
+        (async ()=>{
+            console.log(idNews)
+            let notizia = await this.richiestaDettaglio(idNews);
+            let titolo=notizia.title;
+            notizia=notizia.content;
+            this.props.updateTitolo(titolo);
+            this.props.updateNews(notizia)
+            console.log(this.props)
+            this.renderDettaglio(0)
+        })();
+
+    }
 
     render() {
-        return (
-            <div>
-                <ul>
-                    {this.renderNotizia()}
-                </ul>
+            return (
                 <div>
-                    {this.renderDettaglio(0)}
+                    <ul>
+                        {this.renderNotizia()}
+                    </ul>
+                    <div>
+                        {this.renderDettaglio(0)}
+                    </div>
                 </div>
-            </div>
-        );
-    }
+            );
+        }
+}
+let store = createStore(reducer, window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
+function mapStateToProps(state) {
+    return({
+         contenuto :state.mioReducer,
+        titolo: state.mioSecondoReducer
+    })
+}
+function mapDispatchToProps(dispatch){
+    return({
+        updateNews :(contenuto)=>{
+            dispatch({type:'CAMBIO_NEWS', value:contenuto})
+    },
+        updateTitolo:(titolo)=>{
+            dispatch({type:'CAMBIO_TITOLO', title:titolo})
+        }
+    })
 }
 
+let ConnectedComponent= connect(mapStateToProps,mapDispatchToProps)(Contenitore);
 
 
 ReactDOM.render(
-  <Contenitore />,
+    <Provider store={store}>
+  <ConnectedComponent />
+    </Provider>,
   document.getElementById('root')
 );
